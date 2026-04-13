@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог книг (данные собраны парсером)</title>
+    <!-- Bootstrap 5 CSS (основная сетка и компоненты) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Дополнительные стили для тонкой настройки -->
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .filter-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border: 1px solid #e9ecef;
+        }
+        .table-wrapper {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border: 1px solid #e9ecef;
+            overflow-x: auto;
+        }
+        table {
+            margin-bottom: 0;
+        }
+        thead th {
+            background-color: #0b1e33;
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
+        }
+        .rating {
+            color: #ffb700;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+        .btn-reset {
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover {
+            background-color: #e2e8f0;
+        }
+        .counter {
+            font-size: 0.95rem;
+            color: #475569;
+        }
+    </style>
+</head>
+<body class="p-4">
+<div class="container-fluid px-0" style="max-width: 1600px;">
+    <h1 class="mb-4 text-center fw-bold">📚 Каталог книг 
+        <span class="text-muted fs-5 fw-normal">(данные собраны парсером)</span>
+    </h1>
+
+    {% if books %}
+    <!-- ФИЛЬТРЫ -->
+    <div class="filter-card mb-4">
+        <div class="row g-3 align-items-end">
+            <!-- Поиск по названию -->
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label fw-semibold">🔍 Название</label>
+                <input type="text" class="form-control" id="searchInput" placeholder="Поиск..." autocomplete="off">
+            </div>
+            <!-- Категория -->
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label fw-semibold">📂 Категория</label>
+                <select class="form-select" id="categorySelect">
+                    <option value="">Все категории</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Цена ОТ -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label fw-semibold">💰 Цена от (£)</label>
+                <input type="number" class="form-control" id="priceMin" placeholder="0" min="0" step="0.01">
+            </div>
+            <!-- Цена ДО -->
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label fw-semibold">до (£)</label>
+                <input type="number" class="form-control" id="priceMax" placeholder="1000" min="0" step="0.01">
+            </div>
+            <!-- Рейтинг (минимальный) -->
+            <div class="col-md-6 col-lg-2">
+                <label class="form-label fw-semibold">⭐ Мин. рейтинг</label>
+                <select class="form-select" id="ratingSelect">
+                    <option value="0">Любой рейтинг</option>
+                    <option value="1">★☆☆☆☆ и выше</option>
+                    <option value="2">★★☆☆☆ и выше</option>
+                    <option value="3">★★★☆☆ и выше</option>
+                    <option value="4">★★★★☆ и выше</option>
+                    <option value="5">★★★★★</option>
+                </select>
+            </div>
+            <!-- Чекбокс "В наличии" -->
+            <div class="col-md-4 col-lg-3 d-flex align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="inStockOnly">
+                    <label class="form-check-label fw-semibold" for="inStockOnly">
+                        🟢 Только в наличии
+                    </label>
+                </div>
+            </div>
+            <!-- Кнопка сброса -->
+            <div class="col-md-4 col-lg-3 ms-auto text-md-end">
+                <button class="btn btn-reset px-4" id="resetFiltersBtn">
+                    <i class="bi bi-arrow-repeat me-1"></i> Сбросить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ТАБЛИЦА -->
+    <div class="table-wrapper">
+        <table class="table table-hover align-middle" id="booksTable">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Цена</th>
+                    <th>Категория</th>
+                    <th>Рейтинг</th>
+                    <th>В наличии</th>
+                    <th>Отзывы</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for book in books %}
+                {# Подготавливаем числовые данные для data-атрибутов #}
+                {% set price_num = book.price | replace('£', '') | float %}
+                <tr data-title="{{ book.title.lower() }}"
+                    data-category="{{ book.category.lower() }}"
+                    data-price="{{ price_num }}"
+                    data-rating="{{ book.rating }}"
+                    data-stock="{{ book.stock }}">
+                    <td>{{ book.title }}</td>
+                    <td>{{ book.price }}</td>
+                    <td>{{ book.category }}</td>
+                    <td class="rating">
+                        {% for i in range(book.rating) %}★{% endfor %}
+                        {% for i in range(5 - book.rating) %}<span class="text-secondary">☆</span>{% endfor %}
+                    </td>
+                    <td>{{ book.stock }}</td>
+                    <td>{{ book.reviews }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- СЧЁТЧИК -->
+    <div class="counter mt-3 text-end">
+        Показано книг: <span id="visibleCount">{{ books|length }}</span> из {{ books|length }}
+    </div>
+    {% else %}
+    <div class="alert alert-warning text-center py-5 rounded-4">
+        <h3 class="fw-bold">😕 Нет данных</h3>
+        <p class="mb-0">База данных не найдена или пуста. Запустите парсер.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript для фильтрации (расширенная версия) -->
+<script>
+    (function() {
+        const tableBody = document.getElementById('tableBody');
+        if (!tableBody) return;
+
+        // Элементы управления
+        const searchInput = document.getElementById('searchInput');
+        const categorySelect = document.getElementById('categorySelect');
+        const priceMin = document.getElementById('priceMin');
+        const priceMax = document.getElementById('priceMax');
+        const ratingSelect = document.getElementById('ratingSelect');
+        const inStockCheck = document.getElementById('inStockOnly');
+        const resetBtn = document.getElementById('resetFiltersBtn');
+        const visibleCountSpan = document.getElementById('visibleCount');
+
+        // Все строки таблицы
+        const rows = Array.from(tableBody.querySelectorAll('tr[data-title]'));
+
+        // Функция фильтрации
+        function filterTable() {
+            // Получаем значения фильтров
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const selectedCategory = categorySelect.value.toLowerCase();
+
+            // Цена: если поле пустое, граница не учитывается
+            const minPrice = priceMin.value ? parseFloat(priceMin.value) : null;
+            const maxPrice = priceMax.value ? parseFloat(priceMax.value) : null;
+
+            const minRating = parseInt(ratingSelect.value, 10); // 0..5
+            const onlyInStock = inStockCheck.checked;
+
+            let visible = 0;
+
+            rows.forEach(row => {
+                // Извлекаем данные из data-атрибутов
+                const title = row.getAttribute('data-title') || '';
+                const category = row.getAttribute('data-category') || '';
+                const price = parseFloat(row.getAttribute('data-price')) || 0;
+                const rating = parseInt(row.getAttribute('data-rating'), 10) || 0;
+                const stock = parseInt(row.getAttribute('data-stock'), 10) || 0;
+
+                // Проверка условий
+                const matchesSearch = searchTerm === '' || title.includes(searchTerm);
+                const matchesCategory = selectedCategory === '' || category === selectedCategory;
+
+                // Цена: проверяем только если задана граница
+                let matchesPrice = true;
+                if (minPrice !== null && price < minPrice) matchesPrice = false;
+                if (maxPrice !== null && price > maxPrice) matchesPrice = false;
+
+                const matchesRating = rating >= minRating;
+                const matchesStock = onlyInStock ? stock > 0 : true;
+
+                const show = matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesStock;
+
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            visibleCountSpan.textContent = visible;
+        }
+
+        // Функция сброса всех фильтров
+        function resetFilters() {
+            searchInput.value = '';
+            categorySelect.value = '';
+            priceMin.value = '';
+            priceMax.value = '';
+            ratingSelect.value = '0';
+            inStockCheck.checked = false;
+            filterTable(); // применяем сброшенные фильтры
+        }
+
+        // Назначаем обработчики событий
+        searchInput.addEventListener('input', filterTable);
+        categorySelect.addEventListener('change', filterTable);
+        priceMin.addEventListener('input', filterTable);
+        priceMax.addEventListener('input', filterTable);
+        ratingSelect.addEventListener('change', filterTable);
+        inStockCheck.addEventListener('change', filterTable);
+        resetBtn.addEventListener('click', resetFilters);
+
+        // Инициализация счётчика
+        visibleCountSpan.textContent = rows.length;
+    })();
+</script>
+
+<!-- Bootstrap JS (для возможных интерактивных элементов) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap Icons (для иконки сброса) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</body>
+</html>

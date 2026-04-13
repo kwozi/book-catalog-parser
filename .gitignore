@@ -1,0 +1,21 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# Кэш Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Секретные настройки
+.env
+
+# База данных и JSON (данные пусть собирают сами)
+*.db
+*.db-journal
+books_full.json
+
+# Файлы IDE (если есть)
+.vscode/
+.idea/

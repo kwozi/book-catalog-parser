@@ -11,11 +11,11 @@ __pycache__/
 # Секретные настройки
 .env
 
-# База данных и JSON (данные пусть собирают сами)
+# База данных и JSON 
 *.db
 *.db-journal
 books_full.json
 
-# Файлы IDE (если есть)
+# Файлы IDE 
 .vscode/
 .idea/
